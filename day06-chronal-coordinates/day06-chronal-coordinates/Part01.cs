@@ -11,18 +11,18 @@ namespace day06_chronal_coordinates {
             North, South, East, West
         }
 
-        public static Dictionary<int, Point> ownedAreas;
+        public static Dictionary<int, List<Point>> ownedAreas;
 
         public class Virus {
             public int Id { get; set; }
             public Point Origin { get; set; }
             public Stack<Point> Open { get; set; }
-            public List<Point> Closed { get; set; }
+            public HashSet<Point> Closed { get; set; }
             public bool IsInfinite { get; set; }
 
             public Virus() {
                 Open = new Stack<Point>();
-                Closed = new List<Point>();
+                Closed = new HashSet<Point>();
             }
 
             public void SetOrigin(Area[,] pBoard, Point pOrigin) {
@@ -42,7 +42,6 @@ namespace day06_chronal_coordinates {
                         var area = pBoard[pointToCheck.X, pointToCheck.Y];
                         if (area.State == Area.AreaState.Open) {
                             Open.Push(new Point(pointToCheck.X, pointToCheck.Y));
-                            area.State = Area.AreaState.Start;
                             area.ClaimedBy = Id;
                         }
                     }
@@ -57,28 +56,34 @@ namespace day06_chronal_coordinates {
                 while (Open.Count > 0) {
                     var point = Open.Pop();
 
-                    var pointsToCheck = Neighbours(point);
-
-                    foreach (var pointToCheck in pointsToCheck) {
-                        if (pointToCheck.X < BoardRectangle.Left || pointToCheck.X >= BoardRectangle.Width || pointToCheck.Y < BoardRectangle.Top || pointToCheck.Y >= BoardRectangle.Height) {
-                            IsInfinite = true;
-                        } else {
-                            var area = pBoard[pointToCheck.X, pointToCheck.Y];
-                            if (area.State == Area.AreaState.Open) {
-                                area.ClaimedBy = Id;
-                                area.State = Area.AreaState.Claimed;
-                                boardChanged = true;
-                            } else if (area.State == Area.AreaState.Claimed && area.ClaimedBy.Value != Id) {
-                                area.State = Area.AreaState.Equidistant;
-                                area.ClaimedBy = null;
-                                boardChanged = true;
-                            }
+                    if (point.X < BoardRectangle.Left || point.X >= BoardRectangle.Width || point.Y < BoardRectangle.Top || point.Y >= BoardRectangle.Height) {
+                        IsInfinite = true;
+                    } else {
+                        var area = pBoard[point.X, point.Y];
+                        if (area.State == Area.AreaState.Open) {
+                            area.ClaimedBy = Id;
+                            area.State = Area.AreaState.Claimed;
+                            boardChanged = true;
+                        } else if (area.State == Area.AreaState.Claimed && area.ClaimedBy.Value != Id) {
+                            area.State = Area.AreaState.Equidistant;
+                            area.ClaimedBy = null;
+                            boardChanged = true;
                         }
                     }
 
-                    
+                    var pointsToCheckNext = Neighbours(point);
+
+                    foreach (var pointToCheckNext in pointsToCheckNext) {
+                        if (pBoard[pointToCheckNext.X, pointToCheckNext.Y].State == Area.AreaState.Open) {
+                            nextOpenList.Add(pointToCheckNext);
+                        }
+                    }
 
                     Closed.Add(point);
+                }
+
+                foreach (var pointToCheckNext in nextOpenList) {
+                    Open.Push(pointToCheckNext);
                 }
 
                 return boardChanged;
@@ -106,7 +111,12 @@ namespace day06_chronal_coordinates {
         }
 
         public static void Run() {
-            ownedAreas = new Dictionary<int, Point>();
+            Console.WindowHeight = 50;
+            Console.WindowWidth = 50;
+            Console.BufferHeight = 50;
+            Console.BufferWidth = 50;
+
+            ownedAreas = new Dictionary<int, List<Point>>();
             var lines = File.ReadLines("input.txt");
             var viruses = new Dictionary<int, Virus>();
             var board = new Area[400, 400];
@@ -142,8 +152,40 @@ namespace day06_chronal_coordinates {
             int changes = 0;
 
             do {
-                boardChanged = ClaimRound(viruses, board) || AdministerOwnership(board);
+                bool claimedRound = ClaimRound(viruses, board);
+                bool administeredOwnership = AdministerOwnership(board);
+                boardChanged = claimedRound || administeredOwnership;
                 changes++;
+
+                for (int x = 0; x < 400; x += 10) {
+                    for (int y = 0; y < 400; y += 10) {
+                        Console.SetCursorPosition(x / 10, y / 10);
+
+                        int n = 0;
+                        for (int sx = 0; sx < 10; sx++) {
+                            for (int sy = 0; sy < 10; sy++) {
+                                if (n < 4 && board[x+sx, y+sy].State == Area.AreaState.Start) {
+                                    n = 4;
+                                }
+                                if (n < 3 && board[x + sx, y + sy].State == Area.AreaState.Owned) {
+                                    n = 3;
+                                }
+                                if (n < 2 && board[x + sx, y + sy].State == Area.AreaState.Claimed) {
+                                    n = 2;
+                                }
+                                if (n < 1 && board[x + sx, y + sy].State == Area.AreaState.Equidistant) {
+                                    n = 1;
+                                }
+                            }
+
+                            Console.Write(n == 0 ? " " : n == 1 ? "." : n == 2 ? "C" : n == 3 ? "O" : "S");
+                        }
+                    }
+                }
+
+                if (OwnedAreasCount > 0 && OwnedAreasCount % 100 == 0) {
+                    Console.WriteLine("OwnedAreas: " + ownedAreas.Count.ToString());
+                }
             } while (boardChanged && changes < maxChanges);
 
             if (changes == maxChanges) {
@@ -163,6 +205,8 @@ namespace day06_chronal_coordinates {
             return boardChanged;
         }
 
+        public static int OwnedAreasCount = 0;
+
         public static bool AdministerOwnership(Area[,] pBoard) {
             bool boardChanged = false;
 
@@ -171,7 +215,11 @@ namespace day06_chronal_coordinates {
                     var area = pBoard[x, y];
                     if (area.State == Area.AreaState.Claimed) {
                         area.State = Area.AreaState.Owned;
-                        ownedAreas.Add(area.ClaimedBy.Value, new Point(x, y));
+                        if (!ownedAreas.ContainsKey(area.ClaimedBy.Value)) {
+                            ownedAreas.Add(area.ClaimedBy.Value, new List<Point>());
+                        }
+                        ownedAreas[area.ClaimedBy.Value].Add(new Point(x, y));
+                        OwnedAreasCount++;
                         boardChanged = true;
                     }
                 }
