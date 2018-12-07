@@ -2,92 +2,138 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Threading;
 
 namespace day06_chronal_coordinates {
     public class Part01 {
-        public static Rectangle BoardRectangle;
-
+        #region Enums
         public enum Direction {
             North, South, East, West
         }
+        #endregion
 
-        public static Dictionary<int, List<Point>> ownedAreas;
+        #region Classes
+        public class Board {
+            public Area[,] Areas { get; set; }
+
+            public Board() {
+                Areas = new Area[BoardRectangle.Width, BoardRectangle.Height];
+
+                for (int x = 0; x < BoardRectangle.Width; x++) {
+                    for (int y = 0; y < BoardRectangle.Height; y++) {
+                        Areas[x, y] = Area.Empty;
+                    }
+                }
+            }
+
+            public Area GetArea(Point pPoint) {
+                return Areas[pPoint.X, pPoint.Y];
+            }
+
+            public bool Claim(int pVirusId, Point pPoint) {
+                var area = GetArea(pPoint);
+
+                if (area.State == Area.AreaState.Open) {
+                    area.State = Area.AreaState.Claimed;
+                    area.ClaimedBy = pVirusId;
+                } else if (area.State == Area.AreaState.Claimed) {
+                    area.State = Area.AreaState.Equidistant;
+                    area.ClaimedBy = null; // no one owns this
+                } else {
+                    return false;
+                }
+
+                return true;
+            }
+
+            public bool Origin(int pVirusId, Point pPoint) {
+                var area = GetArea(pPoint);
+
+                if (area.State == Area.AreaState.Open) {
+                    area = new Area {
+                        ClaimedBy = pVirusId,
+                        State = Area.AreaState.Start
+                    };
+                    return true;
+                }
+
+                return false;
+            }
+        }
 
         public class Virus {
             public int Id { get; set; }
             public Point Origin { get; set; }
             public Stack<Point> Open { get; set; }
-            public HashSet<Point> Closed { get; set; }
             public bool IsInfinite { get; set; }
+            public Direction[] SpreadDirections { get; set; }
 
             public Virus() {
                 Open = new Stack<Point>();
-                Closed = new HashSet<Point>();
             }
 
-            public void SetOrigin(Area[,] pBoard, Point pOrigin) {
+            public void SetOrigin(Board pBoard, Point pOrigin) {
                 Origin = pOrigin;
+                pBoard.Origin(Id, pOrigin);
 
-                pBoard[Origin.X, Origin.Y] = new Area {
-                    ClaimedBy = Id,
-                    State = Area.AreaState.Start
-                };
+                //var pointsToCheck = Neighbours(Origin);
 
-                var pointsToCheck = Neighbours(Origin);
-
-                foreach (var pointToCheck in pointsToCheck) {
-                    if (pointToCheck.X < BoardRectangle.Left || pointToCheck.X >= BoardRectangle.Width || pointToCheck.Y < BoardRectangle.Top || pointToCheck.Y >= BoardRectangle.Height) {
-                        IsInfinite = true;
-                    } else {
-                        var area = pBoard[pointToCheck.X, pointToCheck.Y];
-                        if (area.State == Area.AreaState.Open) {
-                            Open.Push(new Point(pointToCheck.X, pointToCheck.Y));
-                            area.ClaimedBy = Id;
-                        }
-                    }
-                }
+                //foreach (var pointToCheck in pointsToCheck) {
+                //    if (pointToCheck.X < BoardRectangle.Left || pointToCheck.X >= BoardRectangle.Width || pointToCheck.Y < BoardRectangle.Top || pointToCheck.Y >= BoardRectangle.Height) {
+                //        IsInfinite = true;
+                //    } else {
+                //        var area = pBoard[pointToCheck.X, pointToCheck.Y];
+                //        if (area.State == Area.AreaState.Open) {
+                //            Open.Push(new Point(pointToCheck.X, pointToCheck.Y));
+                //            area.ClaimedBy = Id;
+                //        }
+                //    }
+                //}
             }
 
-            public bool Claim(Area[,] pBoard) {
-                bool boardChanged = false;
+            public bool Claim(Board pBoard) {
+                return false;
 
-                var nextOpenList = new List<Point>();
+                //bool boardChanged = false;
 
-                while (Open.Count > 0) {
-                    var point = Open.Pop();
+                //var nextOpenList = new List<Point>();
 
-                    if (point.X < BoardRectangle.Left || point.X >= BoardRectangle.Width || point.Y < BoardRectangle.Top || point.Y >= BoardRectangle.Height) {
-                        IsInfinite = true;
-                    } else {
-                        var area = pBoard[point.X, point.Y];
-                        if (area.State == Area.AreaState.Open) {
-                            area.ClaimedBy = Id;
-                            area.State = Area.AreaState.Claimed;
-                            boardChanged = true;
-                        } else if (area.State == Area.AreaState.Claimed && area.ClaimedBy.Value != Id) {
-                            area.State = Area.AreaState.Equidistant;
-                            area.ClaimedBy = null;
-                            boardChanged = true;
-                        }
-                    }
+                //while (Open.Count > 0) {
+                //    var point = Open.Pop();
 
-                    var pointsToCheckNext = Neighbours(point);
+                //    if (point.X < BoardRectangle.Left || point.X >= BoardRectangle.Width || point.Y < BoardRectangle.Top || point.Y >= BoardRectangle.Height) {
+                //        IsInfinite = true;
+                //    } else {
+                //        var area = pBoard[point.X, point.Y];
+                //        if (area.State == Area.AreaState.Open) {
+                //            area.ClaimedBy = Id;
+                //            area.State = Area.AreaState.Claimed;
+                //            boardChanged = true;
+                //        } else if (area.State == Area.AreaState.Claimed && area.ClaimedBy.Value != Id) {
+                //            area.State = Area.AreaState.Equidistant;
+                //            area.ClaimedBy = null;
+                //            boardChanged = true;
+                //        }
+                //    }
 
-                    foreach (var pointToCheckNext in pointsToCheckNext) {
-                        bool outside = pointToCheckNext.X < BoardRectangle.Left || pointToCheckNext.X >= BoardRectangle.Width || pointToCheckNext.Y < BoardRectangle.Top || pointToCheckNext.Y >= BoardRectangle.Height;
-                        if (!outside && pBoard[pointToCheckNext.X, pointToCheckNext.Y].State == Area.AreaState.Open) {
-                            nextOpenList.Add(pointToCheckNext);
-                        }
-                    }
+                //    var pointsToCheckNext = Neighbours(point);
 
-                    Closed.Add(point);
-                }
+                //    foreach (var pointToCheckNext in pointsToCheckNext) {
+                //        bool outside = pointToCheckNext.X < BoardRectangle.Left || pointToCheckNext.X >= BoardRectangle.Width || pointToCheckNext.Y < BoardRectangle.Top || pointToCheckNext.Y >= BoardRectangle.Height;
+                //        if (!outside && pBoard[pointToCheckNext.X, pointToCheckNext.Y].State == Area.AreaState.Open) {
+                //            nextOpenList.Add(pointToCheckNext);
+                //        }
+                //    }
 
-                foreach (var pointToCheckNext in nextOpenList) {
-                    Open.Push(pointToCheckNext);
-                }
+                //    Closed.Add(point);
+                //}
 
-                return boardChanged;
+                //foreach (var pointToCheckNext in nextOpenList) {
+                //    Open.Push(pointToCheckNext);
+                //}
+
+                //return boardChanged;
             }
         }
 
@@ -98,38 +144,55 @@ namespace day06_chronal_coordinates {
 
             public int? ClaimedBy { get; set; }
             public AreaState State { get; set; }
-        }
 
-        public static Point[] Neighbours(Point pPoint) {
-            var pointNorth = new Point(pPoint.X, pPoint.Y - 1);
-            var pointEast = new Point(pPoint.X + 1, pPoint.Y);
-            var pointSouth = new Point(pPoint.X, pPoint.Y + 1);
-            var pointWest = new Point(pPoint.X - 1, pPoint.Y);
-
-            return new Point[] {
-                pointNorth, pointEast, pointSouth, pointWest
-            };
-        }
-
-        public static void Run() {
-            BoardRectangle = new Rectangle(0, 0, 10, 10);
-
-            Console.WindowHeight = 50;
-            Console.WindowWidth = 50;
-            Console.BufferHeight = 50;
-            Console.BufferWidth = 50;
-
-            ownedAreas = new Dictionary<int, List<Point>>();
-            var lines = File.ReadLines("mockInput.txt");
-            var viruses = new Dictionary<int, Virus>();
-            var board = new Area[BoardRectangle.Width, BoardRectangle.Height];
-            int virusId = 1;
-
-            for (int x = 0; x < BoardRectangle.Width; x++) {
-                for (int y = 0; y < BoardRectangle.Height; y++) {
-                    board[x, y] = new Area { ClaimedBy = null, State = Area.AreaState.Open };
+            public static Area Empty {
+                get {
+                    return new Area {
+                        ClaimedBy = null,
+                        State = AreaState.Open
+                    };
                 }
             }
+        }
+        #endregion
+
+        public static Point[] Neighbours(Point pPoint) {
+            var points = new Point[] {
+                new Point(pPoint.X, pPoint.Y - 1),
+                new Point(pPoint.X + 1, pPoint.Y),
+                new Point(pPoint.X, pPoint.Y + 1),
+                new Point(pPoint.X - 1, pPoint.Y)
+            };
+
+            List<Point> result = new List<Point>();
+
+            foreach (var point in points) {
+                if (point.X < 0 || point.Y < 0 || point.X >= BoardRectangle.Width || point.Y >= BoardRectangle.Height)
+                    continue;
+                result.Add(point);
+            }
+
+            return result.ToArray();
+        }
+
+        public static Rectangle BoardRectangle;
+        public static Dictionary<int, List<Point>> ownedAreas;
+        public static int OwnedAreasCount = 0;
+
+        public static void Run() {
+            BoardRectangle = new Rectangle(0, 0, 400, 400);
+
+            Console.WindowWidth = 85;
+            Console.WindowHeight = 50;
+            Console.BufferWidth = 85;
+            Console.BufferHeight = 50;
+
+            ownedAreas = new Dictionary<int, List<Point>>();
+            var lines = File.ReadLines("input.txt");
+            var viruses = new Dictionary<int, Virus>();
+            int virusId = 1;
+
+            Board board = new Board();
 
             foreach (var line in lines) {
                 var parts = line.Split(new string[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
@@ -139,14 +202,9 @@ namespace day06_chronal_coordinates {
                     Id = virusId++
                 };
 
-                virus.SetOrigin(board, point);
-
                 viruses.Add(virus.Id, virus);
-
-                board[point.X, point.Y] = new Area {
-                    ClaimedBy = virus.Id,
-                    State = Area.AreaState.Claimed
-                };
+                virus.SetOrigin(board, point);
+                virus.Open.Push(point);
             }
 
             bool boardChanged = true;
@@ -160,62 +218,102 @@ namespace day06_chronal_coordinates {
                 boardChanged = claimedRound || administeredOwnership;
                 changes++;
 
-                //for (int x = 0; x < 400; x += 10) {
-                //    for (int y = 0; y < 400; y += 10) {
-                //        Console.SetCursorPosition(x / 10, y / 10);
+                //Console.Clear();
+
+                //int visualizeWidth = 80;
+                //int visualizeHeight = 50;
+
+                //int fromTop = 171;
+                //int fromLeft = 222;
+
+                //for (int x = 0 + fromLeft; x < visualizeWidth + fromLeft; x++) {
+                //    for (int y = 0 + fromTop; y < visualizeHeight + fromTop; y++) {
+                //        Console.SetCursorPosition(x - fromLeft, y - fromTop);
+                //        var area = board.GetArea(new Point(x, y));
 
                 //        int n = 0;
-                //        for (int sx = 0; sx < 10; sx++) {
-                //            for (int sy = 0; sy < 10; sy++) {
-                //                if (n < 4 && board[x+sx, y+sy].State == Area.AreaState.Start) {
-                //                    n = 4;
-                //                }
-                //                if (n < 3 && board[x + sx, y + sy].State == Area.AreaState.Owned) {
-                //                    n = 3;
-                //                }
-                //                if (n < 2 && board[x + sx, y + sy].State == Area.AreaState.Claimed) {
-                //                    n = 2;
-                //                }
-                //                if (n < 1 && board[x + sx, y + sy].State == Area.AreaState.Equidistant) {
-                //                    n = 1;
-                //                }
-                //            }
-
-                //            Console.Write(n == 0 ? " " : n == 1 ? "." : n == 2 ? "C" : n == 3 ? "O" : "S");
+                //        if (n < 4 && area.State == Area.AreaState.Start) {
+                //            n = 4;
+                //        } else if (n < 3 && area.State == Area.AreaState.Owned) {
+                //            n = 3;
+                //        } else if (n < 2 && area.State == Area.AreaState.Claimed) {
+                //            n = 2;
+                //        } else if (n < 1 && area.State == Area.AreaState.Equidistant) {
+                //            n = 1;
                 //        }
+
+                //        Console.Write(n == 0 ? " " : n == 1 ? "." : n == 2 ? "C" : n == 3 ? "o" : "S");
                 //    }
                 //}
 
-                if (OwnedAreasCount > 0 && OwnedAreasCount % 100 == 0) {
-                    Console.WriteLine("OwnedAreas: " + ownedAreas.Count.ToString());
-                }
+
+                //Console.SetCursorPosition(0, 0);
+                //Console.WriteLine("OwnedAreasCount: " + OwnedAreasCount);
+
+                //var virus = viruses[1];
+                //Console.WriteLine("");
+                //Console.WriteLine("Virus 1 - IsInfinite: " + virus.IsInfinite.ToString());
+                //Console.WriteLine("Virus 1 - Open #: " + virus.Open.Count);
+                //Console.WriteLine("Virus 1 - Owned: " + ownedAreas[1].Count);
+
+                //Console.ReadKey(true);
             } while (boardChanged && changes < maxChanges);
+
+            var maxAreaCountObject = ownedAreas.Join(viruses, x => x.Key, x => x.Key, (oa, v) => new { Virus = v.Value, IsInfinite = v.Value.IsInfinite, AreasCount = oa.Value.Count })
+                .Where(x => x.IsInfinite == false)
+                .OrderByDescending(x => x.AreasCount).First();
+
+            Console.WriteLine("Max Areas Count: " + maxAreaCountObject.AreasCount);
 
             if (changes == maxChanges) {
                 Console.WriteLine("Max Changes met.");
             }
         }
 
-        public static bool ClaimRound(Dictionary<int, Virus> pViruses, Area[,] pBoard) {
+        public static bool ClaimRound(Dictionary<int, Virus> pViruses, Board pBoard) {
             bool boardChanged = false;
 
             foreach (var virus in pViruses.Values) {
-                if (virus.Claim(pBoard)) {
-                    boardChanged = true;
+                var pointsToProcess = new List<Point>();
+                while (virus.Open.Count > 0) {
+                    pointsToProcess.Add(virus.Open.Pop());
+                }
+
+                foreach (var point in pointsToProcess) {
+                    var area = pBoard.GetArea(point);
+                    if (area.State == Area.AreaState.Open) {
+                        if (pBoard.Claim(virus.Id, point)) {
+                            boardChanged = true;
+                        }
+                    }
+
+                    var neighbours = Neighbours(point);
+
+                    if (neighbours.Length != 4) {
+                        virus.IsInfinite = true;
+                    }
+
+                    foreach (var neighbourPoint in neighbours) {
+                        var neighbourArea = pBoard.GetArea(neighbourPoint);
+                        if (neighbourArea.State == Area.AreaState.Open) {
+                            if (!virus.Open.Contains(neighbourPoint)) {
+                                virus.Open.Push(neighbourPoint);
+                            }
+                        }
+                    }
                 }
             }
 
             return boardChanged;
         }
 
-        public static int OwnedAreasCount = 0;
-
-        public static bool AdministerOwnership(Area[,] pBoard) {
+        public static bool AdministerOwnership(Board pBoard) {
             bool boardChanged = false;
 
             for (int x = 0; x < BoardRectangle.Width; x++) {
                 for (int y = 0; y < BoardRectangle.Height; y++) {
-                    var area = pBoard[x, y];
+                    var area = pBoard.GetArea(new Point(x, y));
+
                     if (area.State == Area.AreaState.Claimed) {
                         area.State = Area.AreaState.Owned;
                         if (!ownedAreas.ContainsKey(area.ClaimedBy.Value)) {
