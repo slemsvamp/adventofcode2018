@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2047
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "day07-the-sum-of-its-parts", "day07-the-sum-of-its-parts\day07-the-sum-of-its-parts.csproj", "{9578C2E1-8BD4-45C1-82F2-204C97C182DC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9578C2E1-8BD4-45C1-82F2-204C97C182DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9578C2E1-8BD4-45C1-82F2-204C97C182DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9578C2E1-8BD4-45C1-82F2-204C97C182DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9578C2E1-8BD4-45C1-82F2-204C97C182DC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BDA609B7-D22B-4592-9495-613ED14DE023}
+	EndGlobalSection
+EndGlobal
