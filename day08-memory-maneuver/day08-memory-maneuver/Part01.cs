@@ -1,47 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace day08_memory_maneuver {
     class Part01 {
         class Node {
-            public int ChildNodes { get; set; }
             public List<Node> Children { get; set; }
-            public List<int> MetadataEntries { get; set; }
+            public int MetadataSum { get; set; }
         }
+
+        public static int metadataSum = 0;
 
         public static void Run() {
-            var numbersText = File.ReadAllText("mockInput.txt");
+            var numbersText = File.ReadAllText("input.txt");
             var parts = numbersText.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
-            List<int> numbers = new List<int>();
-            foreach (var part in parts) {
-                numbers.Add(int.Parse(part));
+
+            var data = new Stack<int>();
+
+            foreach (var part in parts.Reverse()) {
+                data.Push(int.Parse(part));
             }
 
-            var nodes = new Dictionary<int, Node>();
+            var node = CreateNode(data, 1);
 
-            for (int i = 0; i < numbers.Count; i++) {
-                var node = CreateNode(i, numbers);
-                nodes.Add(i, node);
-            }
-
-            Console.WriteLine(numbers.Count);
+            Console.WriteLine(metadataSum);
         }
 
-        static Node CreateNode(Node pParent, List<int> pNumbers) {
-            // read header
-            var quantityChildNodes = pNumbers[pIndex];
-            var quantityMetadataEntries = pNumbers[pIndex+1];
+        static Node CreateNode(Stack<int> pStack, int pLevel) {
+            var childrenCount = pStack.Pop();
+            var metadataCount = pStack.Pop();
 
-            var reverse = new List<int>(pNumbers);
-            reverse.Reverse();
+            var node = new Node {
+                Children = new List<Node>(),
+                MetadataSum = 0
+            };
 
-            var inbetween = new List<int>();
+            for (int i = 0; i < childrenCount; i++) {
+                var child = CreateNode(pStack, pLevel + 1);
+                node.Children.Add(child);
+            }
             
+            for (int p = 0; p < metadataCount; p++) {
+                node.MetadataSum += pStack.Pop();
+            }
 
-            var node = new Node(null, inbetween);
+            metadataSum += node.MetadataSum;
 
+            return node;
         }
     }
 }
