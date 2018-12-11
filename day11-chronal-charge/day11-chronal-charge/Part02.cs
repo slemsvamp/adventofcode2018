@@ -110,12 +110,14 @@ namespace day11_chronal_charge {
                     // corner
                     powerlevel += fuelCells[x + pSize - 1, y + pSize - 1].PowerLevel;
 
+                    powerlevel += history[previousSize][x, y].PowerLevel;
+
                     if (powerlevel > largestPower) {
                         largestPower = powerlevel;
                         largestPoint = new Point(x, y);
                     }
 
-                    history[pSize][x, y] = new FuelCellAggregate { PowerLevel = history[previousSize][x, y].PowerLevel + powerlevel };
+                    history[pSize][x, y] = new FuelCellAggregate { PowerLevel = powerlevel };
                 }
             }
 
