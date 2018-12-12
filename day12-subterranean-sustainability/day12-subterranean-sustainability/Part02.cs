@@ -16,7 +16,7 @@ namespace day12_subterranean_sustainability {
                 }
                 return plc.ToArray();
             });
-            var ini = new { s = 0, a = bit("...." + lines[0].Substring(15) + "......") };
+            var ini = new { s = 0, a = bit("...." + lines[0].Substring(15) + "....") };
             var rules = lines.Where(l => l.IndexOf("=>") >= 0).Select(l => l.Split(new string[] { " => " }, StringSplitOptions.RemoveEmptyEntries)).ToList();
             var filters = rules.Select(r => new { c = r[1][0] == '#', f = bit(r[0]) });
             string genl = "";
