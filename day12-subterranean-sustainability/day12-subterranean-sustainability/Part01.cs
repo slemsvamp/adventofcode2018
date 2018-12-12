@@ -183,7 +183,7 @@ namespace day12_subterranean_sustainability {
                 }
             }
 
-            Console.WriteLine(lastGeneration.ToString());
+            //Console.WriteLine(lastGeneration.ToString());
             Console.WriteLine(sum);
             //AssertMockInput();
         }
