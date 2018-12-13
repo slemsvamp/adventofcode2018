@@ -48,14 +48,10 @@ namespace day13_mine_cart_madness {
         static Map map;
         static int cartId;
 
-        public static void Run() {
-            // Wrong: 110,94
-            // Wrong: 111,94
-
-            bool render = false;
+        public static void Run(bool pRender) {
             Console.CursorVisible = false;
             Point camera = new Point(0, 0);
-            Size size = new Size(70, 26);
+            Size size = new Size(50, 24);
             cartId = 0;
             var lines = File.ReadAllLines("input.txt");
             var cartRule = new List<Direction> { Direction.Left, Direction.Forward, Direction.Right };
@@ -63,8 +59,8 @@ namespace day13_mine_cart_madness {
             int seconds = 0;
             map = new Map(lines[0].Length, lines.Length);
             size = new Size(map.Size.Width, map.Size.Height);
-            if (size.Width > 70) size.Width = 70;
-            if (size.Height > 26) size.Height = 26;
+            if (size.Width > 50) size.Width = 50;
+            if (size.Height > 24) size.Height = 24;
 
             for (int y = 0; y < lines.Length; y++) {
                 var lineLength = lines[y].Length;
@@ -121,21 +117,16 @@ namespace day13_mine_cart_madness {
                     }
                 }
             }
-
-            bool crash = false;
-
-            //Console.WriteLine("Carts left: " + carts.Count);
-
-            while (!crash) {
+            
+            while (true) {
                 seconds++;
-                if (seconds == 5415) render = true;
                 var cartsToReAdd = new List<Cart>();
                 var newCarts = new Dictionary<int, Cart>(carts);
-                foreach (var cart in carts.Values) {
+                var keys = carts.Keys.OrderBy(k => k).ToList();
+
+                foreach (var key in keys) {
+                    var cart = carts[key];
                     if (cart.Crashed) continue;
-
-                    bool outputCarts = false;
-
                     Rail targetRail = null;
                     if (cart.Location.IsIntersection) {
                         // go certain direction
@@ -183,71 +174,77 @@ namespace day13_mine_cart_madness {
 
                     newCarts.Remove(cart.Index);
                     var previousLocation = cart.Location;
-                    cart.Location = cart.NextLocation;
+                    var newCart = new Cart { Location = cart.NextLocation, Facing = cart.Facing, Crashed = cart.Crashed, NextIntersectionDirection = cart.NextIntersectionDirection, Id = cart.Id, NextLocation = null };
                     try {
-                        newCarts.Add(cart.Index, cart);
+                        newCarts.Add(newCart.Index, newCart);
                     } catch (ArgumentException ex) {
                         if (ex.Message.StartsWith("An item with the same key has already been added.")) {
-                            //Console.WriteLine($"Crash at X={cart.Location.X},Y={cart.Location.Y}");
-                            newCarts[cart.Index].Crashed = true;
-                            newCarts.Remove(cart.Index);
-                            outputCarts = true;
+                            // Console.WriteLine($"Crash at X={cart.Location.X},Y={cart.Location.Y}");
+                            newCarts[newCart.Index].Crashed = true;
+                            newCarts.Remove(newCart.Index);
                         }
-                    }
-
-                    if (outputCarts) {
-                        //Console.WriteLine("Carts left: " + newCarts.Count);
                     }
                 }
 
                 carts = newCarts;
 
-                // RENDERING
-                if (render) {
-                    foreach (var cart in carts.Values) {
-                        if (cart.Id == 6) {
-                            camera.X = cart.Location.X - (size.Width / 2);
-                            camera.Y = cart.Location.Y - (size.Height / 2);
-
-                            if (camera.X < 0) camera.X = 0;
-                            if (camera.Y < 0) camera.Y = 0;
-                            if (camera.X > map.Size.Width - size.Width) camera.X = map.Size.Width - size.Width;
-                            if (camera.Y > map.Size.Height - size.Height) camera.Y = map.Size.Height - size.Height;
-                        }
-                    }
-                    
-                    for (int y = camera.Y; y < camera.Y + size.Height; y++) {
-                        var line = lines[y];
-                        Console.SetCursorPosition(0, y - camera.Y);
-                        Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.WriteLine(line.Substring(camera.X, size.Width));
-
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        for (int x = camera.X; x < camera.X + size.Width; x++) {
-                            foreach (var cart in carts.Values) {
-                                if (cart.Location.X == x && cart.Location.Y == y) {
-                                    Console.SetCursorPosition(x - camera.X, y - camera.Y);
-                                    switch (cart.Facing) {
-                                        case Direction.North: Console.Write("^"); break;
-                                        case Direction.West: Console.Write("<"); break;
-                                        case Direction.East: Console.Write(">"); break;
-                                        case Direction.South: Console.Write("v"); break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Console.ReadKey(true);
-                }
+                if (pRender) { Render(carts, null, camera, size, lines); }
 
                 if (carts.Count == 1) {
                     var aloneCart = carts.Single().Value;
-                    Console.SetCursorPosition(0, 0);
+                    if (pRender) {
+                        Console.SetCursorPosition(0, 0);
+                    }
                     Console.WriteLine($"Cart {aloneCart.Id} at X={aloneCart.Location.X},Y={aloneCart.Location.Y}, Facing={aloneCart.Facing.ToString()} on second {seconds}.");
                     return;
                 }
             }
+        }
+
+        static void Render(Dictionary<int, Cart> pCarts, Cart pFollowCart, Point pCamera, Size pSize, string[] pLines) {
+            var carts = pCarts;
+            var camera = pCamera;
+            var size = pSize;
+            var lines = pLines;
+            var followCart = pFollowCart;
+
+            foreach (var cart in carts.Values) {
+                if ((followCart == null && cart.Id == 6) || (followCart != null && cart.Id == followCart.Id)) {
+                    camera.X = cart.Location.X - (size.Width / 2);
+                    camera.Y = cart.Location.Y - (size.Height / 2);
+
+                    followCart = cart;
+
+                    if (camera.X < 0) camera.X = 0;
+                    if (camera.Y < 0) camera.Y = 0;
+                    if (camera.X > map.Size.Width - size.Width) camera.X = map.Size.Width - size.Width;
+                    if (camera.Y > map.Size.Height - size.Height) camera.Y = map.Size.Height - size.Height;
+                }
+            }
+
+            for (int y = camera.Y; y < camera.Y + size.Height; y++) {
+                var line = lines[y];
+                Console.SetCursorPosition(0, y - camera.Y);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine(line.Substring(camera.X, size.Width));
+
+                Console.ForegroundColor = ConsoleColor.Red;
+                for (int x = camera.X; x < camera.X + size.Width; x++) {
+                    foreach (var cart in carts.Values) {
+                        if (cart.Location.X == x && cart.Location.Y == y) {
+                            Console.SetCursorPosition(x - camera.X, y - camera.Y);
+                            switch (cart.Facing) {
+                                case Direction.North: Console.Write("^"); break;
+                                case Direction.West: Console.Write("<"); break;
+                                case Direction.East: Console.Write(">"); break;
+                                case Direction.South: Console.Write("v"); break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Thread.Sleep(200);
         }
 
         static Rail LookForRail(Map pMap, int pX, int pY) {
