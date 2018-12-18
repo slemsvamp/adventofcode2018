@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <RootNamespace>day17_reservoir_research</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="data.txt" />
+    <None Remove="map.backup.mp" />
+    <None Remove="map.mp" />
+    <None Remove="print.txt" />
+    <None Remove="print2.txt" />
+    <None Remove="print3.txt" />
+    <None Remove="test.rb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="input.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
